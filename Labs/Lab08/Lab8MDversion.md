@@ -2,11 +2,15 @@
 
 #### The function written below completes the following
 
-*takes arguments of intrinsic growth rate, carrying capacity, number of generations to model, and starting population
-*uses these arguments to make abundance data 
-*generates a plot of abundance over time
-*creates a data frame with generation number and abundance data
-*writes this data frame as a csv file
+1. takes arguments of:
+  *intrinsic growth rate
+  *carrying capacity
+  *number of generations to model
+  *starting population
+2. uses these arguments to make abundance data 
+3. generates a plot of abundance over time
+4. creates a data frame with generation number and abundance data
+5. writes this data frame as a csv file
 
 ```{r}
   growthFunc <- function(r, k, generations, initialPop ){
