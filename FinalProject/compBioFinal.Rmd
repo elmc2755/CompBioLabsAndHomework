@@ -1,0 +1,119 @@
+
+---
+author: "Lizzy McGary"
+date: "4/29/2021"
+output: pdf_document
+---
+
+## Introduction
+The dataset that I worked with was compiled from multiple studies to create one large dataset of variables including plant species, flower symmetry type, pollinator visitation while observed, the amount of "sharing" done by pollinators, or how many of the visited pollinators visited other plants, and what proportion of sharing was between different symmetry types.The data was compiled for a study that was primarily interested in the affect of symmetry on the number of potential pollinator species that commonly visited. The code below shows that the large data set was compiled from 67 separate studies. Each study goal was somewhat different ranging from modeling on pollinator activity, population ecology, floral structures, and other topics. I chose this large compiled dataset because I wanted to evaluate weather certain flower types and genuses experienced much higher pollination rates across ecosystems than others, and how floral symmetry impacts pollinator preferences. My driving question for this project was to determine if certain genuses were far more likely to be visited by pollinators than other genuses. This would be interesting to explore as it could be used to further narrow down focus to study groups that have unusually high or low visitation by pollinators. The groups that experience very high or very low pollination rates could be subject to current directional selection, or have interesting relationships with their primary pollinators. 
+
+```{r}
+refrenceData <- read.csv("C:/Users/lizzy/OneDrive/Desktop/refrences.csv")
+length(unique(refrenceData$Reference)) 
+```
+## Summary of data to be analyzed
+The original dataframe is 347 KB, and has 4079 rows of data. Each row is a separate plant being observed, not necessarily a new species. Looking at the data the largest challenge is that my analysis takes place on the genus level, but there is no separate column for genus, instead the scientific name with species and genus is grouped together in one column. This can easily be fixed by using a splitting functions that many packages have. I chose to use the splitting function in stringr to separate the genus and species name and get just the genus in the correct order as a vector of strings.
+
+## Methods
+My original intent was to run a two-way ANOVA on the available data, evaluating if there is a significant connection between floral symmetry, plant genus, and pollinator visitation rate. Then I would complete post-hoc testing to determine what groups were significantly different. I had to amend this plan, as running post-hoc tests on a dataset with so many groups, hundreds of genuses, would not be practical and would take many hours for the test to run if the test could even be completed on my computer. To amend this, I instead decided to create a random sample of the 
+data.
+
+This random sample would then serve as the new data set for ANOVA analysis of genus, symmetry, and pollinator visitation. The final method used was random selection of 20 genus groups for analysis. Then, one way ANOVA was completed to determine if genus had an impact on pollinator visitation, and a two-way ANOVA was done to determine if there was any association between genus and symmetry and their affect on pollinator visitation.
+
+
+
+
+This code is the manipulation of data I did to set up for the final testing
+
+```{r}
+
+plantpolinatordata <- read.csv("C:/Users/lizzy/OneDrive/Desktop/plantdata.csv")
+
+plantPolSpecies <- plantpolinatordata$plant
+
+#helps to separate strings without me writing my own function
+library(stringr)
+
+numberSamples <- length(plantPolSpecies)
+plantPolGenus <- rep(" ", 2736) # pre allocation of empty strings
+
+
+plantPolGenus <- word(plantPolSpecies, 1) #this grabs just the genus from the vector of full scientific names, keeping the original row number
+
+plantpolinatordata$Genus <- plantPolGenus
+
+plantPolGenusAndVis <- plantpolinatordata[ , c( "Genus", "n.poll", "symmetry") ] #uses genus list to make new DF w symmetry, genus and visitation number
+
+#then, because the data set it too large to run TUKEY test on all genus groups, I selected 20 random genuses
+randomSample <- sample(plantPolGenus, 20)
+randomSample 
+
+#subsetting the data by the selected genus
+plantPolGenus20 <- subset(plantPolGenusAndVis,  Genus == "Plantago" | Genus == "Psidium" | Genus == "Paragenipa" | Genus == "Cerastium" | Genus == "Argyranthemum" | Genus == "Mimusops" | Genus == "Vaccinium" | Genus == "Aphloia" | Genus == "Colea" | Genus == "Homalanthus" | Genus == "Fraxinus" | Genus == "Aechmea"  | Genus ==  "Celmisia" | Genus ==  "Eugenia" | Genus == "Agrimonia"  )
+
+
+```
+
+This code is the ANOVA testing, both one way for evaluation of genus affect, and two way to see if there is an interaction between symmetry and genus
+
+```{r}
+
+# Does plant genus affect the visitation rate of pollinators to flowers?
+
+# Null : The mean pollinator visitation between plant genuses are not significantly different. 
+# Alternate: The mean pollinator visitation between at least one of the genuses is differnt. 
+
+PolGenaov <- aov(n.poll ~ Genus, data = plantPolGenus20)
+summary(PolGenaov)
+#p value of 0.000232
+
+TukeyHSD(PolGenaov)
+
+# Is there an interaction between the genus and symmetry of flowers on the number of visitations to flowers from pollinators?
+
+# Null : There is no interaction between the symmetry and genus of flowers on pollination visitation.
+# Alternate: There is an interaction between the symmetry and genus of flowers on pollination visitation.
+
+
+Polaov <- aov(n.poll ~ Genus + symmetry, data = plantPolGenus20)
+summary(Polaov)
+
+
+```
+
+## Results
+
+The one way ANOVA testing showed that there was a significant difference in pollinator visitation between genus groups. With a p value of 0.000232, being less than the alpha of 0.05, the null hypothesis that all the genuses have the same mean can be rejected. This means that the alternate must then be accepted, that there is a difference between means. This means of the genuses randomly selected, there is a difference in the visitation rate of pollinators based on genus. The results of the two way ANOVA testing showed that symmetry type did not correlate to a significant difference in pollinator visitation. While the p-value for the genus variable confirmed again that mean pollinator visitation differed by plant genus by being lower than the alpha, the p-value based on symmetry was not below alpha, so the null that there was no association between genus and symmetry impact on pollinator visitation is accepted. This result is interesting, as plants of a genus often have the same flower symmetry, so my initial belief was that there would be some interaction between symmetry and genus. This was not the case. This may be for two reasons. Not all species within a genus have the same symmetry type, as then these two variables would be completely dependent on each other. I think that the result of seeing no interaction between
+symmetry type and genus is more likely due to the flawed way that I generated the random sample of genus groups. I used all genus groups, randomized a sample of twenty, instead of stratifying the sample by splitting the sample into genuses with actinomorphic flowers and genuses with zygomorphic flowers. 
+I did not stratify random sample from the original data set, because the majority of genuses sampled where actinomorphic, and because there were genuses in the dataset with different species, some of which were actinomorphic and some of which were zygomorphic. This means I could not aggregate the data based
+on symmetry type or genus. Instead, I believed that in sampling randomly from the entire data set I would get a relatively even distribution of actinomorphic and zygomorphic flowers. This was not the case. I believe that the result of seeing no association between symmetry type, genus, and pollinator visitation 
+is at least partially due to having few genuses with solely zygomorphic flowers. I believe the method design could be changed to either a larger random sample, or to be stratified to ensure that sampling includes enough genuses from each symmetry type.  Another issue with the methods is that because genus and symmetry type are not completely independent from each other, the assumption of independence needed for ANOVA may not be met. I think that additionally another step could be taken to clean the data, I should have eliminated genus groups with fewer than a certain number of species and samples, to ensure that the mean was a true reflection of the genus and not an observation from a small group of species within the genus. Because I did not originally remove genuses with fewer than two observations, I had to then remove them when they showed up in my random sample. The variance between the groups was also very high, because the amount of species sampled in the original dataset for each genus was not equal. Because the dataset
+was compiled from several other studies, I would classify the data found on the species within each genus to be samples of convince, because the species sampled in the data were the ones that had been sampled in previous studies. This creates a fair amount of bias and potential for error in the original dataset, which may also be present in the subset data from the random sample I created. Overall, it seems that from the limited sample that my computer could process in a realistic amount of time, there is some difference in the pollination of flowers based on plant genus. 
+
+## Plots
+
+```{r}
+
+colors <- c("orange", "pink", "pink", "pink", "pink", "pink", "yellow","pink", "pink", "pink", "pink", "pink", "pink", "pink", "pink", "pink", "orange", "pink", "pink", "pink" )
+
+boxplot(n.poll ~ Genus, data = plantPolGenus20, xlab = "Plant Genus", ylab = "Pollinator Visitation", main = "Pollinator Visitation by Genus", las=2, col = colors)
+legend("topright", legend= c("Actinomorphic", "Zygomorphic", "Both types of symmetry present within Genus"), col = c("pink", "yellow", "orange"), pch=15)
+
+
+
+```
+
+From this plot it is recognizable that few zygomorhpic gensus groups were selected, and that some of the genuses randomly selected had very limited data. Additionally, the most different mean was seen in a genus that had limited data (Machitus), which could have made a large impact on the results of the one way ANOVA. 
+
+
+## Refrences
+
+Hadley Wickham (2019). stringr: Simple, Consistent Wrappers for Common String Operations. R package version 1.4.0. (https://CRAN.R-project.org/package=stringr)
+
+R Core Team (2021). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+URL (http://www.R-project.org/.)
+
+
+Yoder, Jeremy B.; Gomez, Giancarlo; Carlson, Colin J. (2020), Zygomorphic flowers have fewer potential pollinator species, Dryad, Dataset, (https://doi.org/10.5061/dryad.gxd2547j3)
